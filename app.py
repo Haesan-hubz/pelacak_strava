@@ -5,8 +5,8 @@ from streamlit_folium import st_folium
 from streamlit_js_eval import get_geolocation
 
 st.set_page_config(layout="wide")
-st.title("🗺️ Navigasi Rute Strava (Live Follow)")
-st.write("Upload file rute GPX, lalu bawa HP Anda berjalan untuk mengikuti jalurnya.")
+st.title("bismmilah mboten error")
+st.write("gek ndang, pingin turu aku")
 
 # Tombol untuk Upload File Rute .GPX Strava
 file_gpx = st.file_uploader("Upload Rute Panduan (.gpx)", type=["gpx"])
