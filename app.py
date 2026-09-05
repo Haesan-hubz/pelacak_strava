@@ -22,8 +22,8 @@ new Promise((resolve, reject) => {
                 lat: position.coords.latitude,
                 lon: position.coords.longitude,
                 accuracy: position.coords.accuracy
-            });
-        },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
+);
         (error) => { resolve({error: error.message}); },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
     ):
