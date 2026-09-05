@@ -22,13 +22,14 @@ new Promise((resolve, reject) => {
                 lat: position.coords.latitude,
                 lon: position.coords.longitude,
                 accuracy: position.coords.accuracy
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
-);
+            });
+        },
         (error) => { resolve({error: error.message}); },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
-    ):
+    );
 });
 """
+
 
 # Mengambil koordinat perangkat saat ini
 data_gps = streamlit_js_eval(js_expressions=js_gps_code, key="watch_gps")
