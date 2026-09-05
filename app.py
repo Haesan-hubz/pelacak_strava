@@ -1,46 +1,16 @@
 import streamlit as st
 import gpxpy
-import folium
-from streamlit_folium import st_folium
-from streamlit_js_eval import streamlit_js_eval
+import json
 
 st.set_page_config(layout="wide")
-st.title("🗺️ Navigasi Rute Strava (Live Real-Time)")
-st.write("Bawa HP Anda berjalan, peta akan otomatis bergeser mengikuti langkah Anda tanpa refresh manual.")
+st.title("🏃‍♂️ Navigasi Rute Strava (Live Real-Time - HTML5)")
+st.write("Bawa HP Anda berjalan di luar ruangan. Titik biru akan bergeser mulus secara live tanpa ada refresh halaman!")
 
-# =========================================================================
-# 1. ENGINE UTAMA: CAPTURE SENSOR LOKASI HP (REAL-TIME)
-# =========================================================================
-js_gps_code = """
-new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-        resolve({error: "Browser tidak mendukung GPS"});
-    }
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            resolve({
-                lat: position.coords.latitude,
-                lon: position.coords.longitude,
-                accuracy: position.coords.accuracy
-            });
-        },
-        (error) => { resolve({error: error.message}); },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 }
-    );
-});
-"""
-
-
-# Mengambil koordinat perangkat saat ini
-data_gps = streamlit_js_eval(js_expressions=js_gps_code, key="watch_gps")
-
-# Tombol untuk Upload File Rute .GPX Strava
+# 1. Tombol untuk Upload File Rute .GPX Strava
 file_gpx = st.file_uploader("Upload Rute Panduan (.gpx)", type=["gpx"])
 
-# =========================================================================
-# 2. PROSES PETA DAN NAVIGASI DI DALAM FRAGMENT (PENYEGARAN OTOMATIS)
-# =========================================================================
 if file_gpx is not None:
+    # Membaca data koordinat rute dari file GPX
     gpx = gpxpy.parse(file_gpx)
     titik_rute = []
     for track in gpx.tracks:
@@ -49,50 +19,88 @@ if file_gpx is not None:
                 titik_rute.append([point.latitude, point.longitude])
                 
     if titik_rute:
-        # Tentukan titik awal rute Strava sebagai default
-        pusat_peta = titik_rute[0]
+        # Mengubah data list Python menjadi format JSON agar bisa dibaca oleh JavaScript peta
+        rute_json = json.dumps(titik_rute)
+        titik_start = titik_rute[0]
+        titik_finish = titik_rute[-1]
         
-        # Simpan koordinat live ke dalam memori session state
-        if data_gps and isinstance(data_gps, dict) and "lat" in data_gps:
-            st.session_state.lat_live = data_gps["lat"]
-            st.session_state.lon_live = data_gps["lon"]
-            st.session_state.accuracy = data_gps["accuracy"]
-            pusat_peta = [st.session_state.lat_live, st.session_state.lon_live]
-            
-            st.sidebar.success(
-                f"Sinyal GPS Terkunci! 📍\n"
-                f"Lat: {st.session_state.lat_live:.5f}\n"
-                f"Lon: {st.session_state.lon_live:.5f}\n"
-                f"Akurasi: {st.session_state.accuracy:.1f} m"
-            )
-        else:
-            st.sidebar.warning("Sedang mencari sinyal GPS HP... Pastikan Anda berjalan di luar ruangan.")
+        # =========================================================================
+        # 2. INJEKSI KODE PETA JAVASCRIPT MURNI (ANTI REFRESH / LIVE TRACKING)
+        # =========================================================================
+        html_code = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <link rel="stylesheet" href="https://unpkg.com" />
+            <script src="https://unpkg.com"></script>
+            <style>
+                #map {{ height: 550px; width: 100%; border-radius: 10px; }}
+                #status {{ padding: 10px; background: #d4edda; color: #155724; border-radius: 5px; margin-bottom: 10px; font-family: sans-serif; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div id="status">📡 Menghubungkan ke satelit GPS... Pastikan izin lokasi aktif dan Anda di luar ruangan.</div>
+            <div id="map"></div>
 
-        # Membuat Peta Interaktif
-        peta = folium.Map(location=pusat_peta, zoom_start=17)
+            <script>
+                // A. Inisialisasi Peta Dasar berpusat di titik awal Rute
+                var map = L.map('map').setView([{titik_start[0]}, {titik_start[1]}], 16);
+                
+                L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+                    attribution: '© OpenStreetMap contributors'
+                }}).addTo(map);
+
+                // B. Menggambar Garis Rute Panduan Strava (Oranye)
+                var ruteTarget = {rute_json};
+                L.polyline(ruteTarget, {{color: '#fc4c02', weight: 6, opacity: 0.8}}).addTo(map);
+                
+                // Penanda Start & Finish Rute
+                L.marker([{titik_start[0]}, {titik_start[1]}]).addTo(map).bindPopup("Start Rute");
+                L.marker([{titik_finish[0]}, {titik_finish[1]}]).addTo(map).bindPopup("Finish Rute");
+
+                // C. Membuat Penanda Titik Biru Live Pengguna
+                var liveMarker = L.circleMarker([0, 0], {{
+                    color: '#007bff', fillColor: '#007bff', fillOpacity: 0.9, radius: 10
+                }}).addTo(map).bindPopup("Posisi Kamu");
+
+                var statusDiv = document.getElementById('status');
+
+                // D. FUNGSI INTI: Memantau Pergerakan Sensor GPS HP Tanpa Halaman Memuat Ulang
+                if (navigator.geolocation) {{
+                    navigator.geolocation.watchPosition(
+                        function(position) {{
+                            var lat = position.coords.latitude;
+                            var lon = position.coords.longitude;
+                            var acc = position.coords.accuracy;
+
+                            // 1. Geser Titik Biru ke Posisi Baru di Peta
+                            liveMarker.setLatLng([lat, lon]);
+                            
+                            // 2. Otomatis Geser Fokus Kamera Peta Mengikuti Langkah Anda
+                            map.setView([lat, lon]);
+
+                            // 3. Update Status Teks Akurasi GPS
+                            statusDiv.innerHTML = "✅ <b>Sinyal GPS Terkunci!</b> | Lat: " + lat.toFixed(5) + " | Lon: " + lon.toFixed(5) + " | Akurasi: " + acc.toFixed(1) + " meter";
+                            statusDiv.style.background = "#d4edda";
+                            statusDiv.style.color = "#155724";
+                        }},
+                        function(error) {{
+                            statusDiv.innerHTML = "❌ Gagal mengambil GPS: " + error.message;
+                            statusDiv.style.background = "#f8d7da";
+                            statusDiv.style.color = "#721c24";
+                        }},
+                        {{ enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }}
+                    );
+                }} else {{
+                    statusDiv.innerHTML = "❌ Browser Anda tidak mendukung sensor GPS.";
+                }}
+            </script>
+        </body>
+        </html>
+        """
         
-        # GAMBAR JALUR PANDUAN: Rute dari Strava (Garis Oranye)
-        folium.PolyLine(titik_rute, color="#fc4c02", weight=6, opacity=0.8).add_to(peta)
-        folium.Marker(titik_rute[0], popup="Start", icon=folium.Icon(color="green", icon="play")).add_to(peta)
-        folium.Marker(titik_rute[-1], popup="Finish", icon=folium.Icon(color="black", icon="flag")).add_to(peta)
+        # Tampilkan komponen peta HTML/JavaScript murni ke layar Streamlit
+        st.components.v1.html(html_code, height=600)
         
-        # GAMBAR POSISI LIVE: Titik Biru yang otomatis berpindah
-        if "lat_live" in st.session_state:
-            folium.Marker(
-                [st.session_state.lat_live, st.session_state.lon_live],
-                popup="Posisi Anda Sekarang",
-                icon=folium.Icon(color="blue", icon="user", prefix="fa")
-            ).add_to(peta)
-        
-        # Tampilkan peta ke layar browser HP
-        st_folium(peta, width=900, height=600, key="peta_navigasi_live")
-        
-        # Pemicu Rerun otomatis khusus untuk memperbarui sensor GPS setiap 4 detik
-        time_trigger = st.checkbox("Aktifkan Pelacakan Otomatis (Live Tracking)", value=True)
-        if time_trigger:
-            import time
-            time.sleep(4)
-            st.rerun() # Memaksa Streamlit membaca ulang sensor koordinat baru
-            
     else:
-        st.error("File GPX tidak valid.")
+        st.error("File GPX tidak memiliki data koordinat.")
