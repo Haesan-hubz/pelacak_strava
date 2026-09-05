@@ -64,7 +64,7 @@ if file_gpx is not None:
         
         # Otomatis memicu pembaruan koordinat setiap 7 detik secara aman tanpa merusak peta
         import time
-        time.sleep(7)
+        time.sleep(4)
         st.rerun()
         
     else:
