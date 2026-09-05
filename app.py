@@ -54,7 +54,7 @@ if file_gpx is not None:
         peta = folium.Map(location=pusat_peta, zoom_start=17)
 
         folium.PolyLine(titik_rute, color="#fc4c02", weight=6, opacity=0.8).add_to(peta)
-        folium.Marker(titik_rute, popup="Start", icon=folium.Icon(color="green", icon="play")).add_to(peta)
+        folium.Marker(titik_rute[0], popup="Start", icon=folium.Icon(color="green", icon="play")).add_to(peta)
         folium.Marker(titik_rute[-1], popup="Finish", icon=folium.Icon(color="black", icon="flag")).add_to(peta)
 
 
