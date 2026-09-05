@@ -3,7 +3,7 @@ import gpxpy
 import json
 
 st.set_page_config(layout="wide")
-st.title("🏃‍♂️ Navigasi Rute Strava (Live Real-Time - HTML5kepls)")
+st.title("🏃‍♂️ Navigasi Rute Strava (Live Real-Time - HTML5ke2)")
 st.write("Bawa HP Anda berjalan di luar ruangan. Titik biru akan bergeser mulus secara live tanpa ada refresh halaman!")
 
 # 1. Tombol untuk Upload File Rute .GPX Strava
@@ -27,7 +27,7 @@ if file_gpx is not None:
         lon_finish = float(titik_rute[-1][1])
         
         # =========================================================================
-        # 2. KODE PETA JAVASCRIPT MURNI (DIJAMIN AMAN DARI BENTROK KARAKTER PY)
+        # 2. KODE PETA JAVASCRIPT MURNI (SUDAH DIKOREKSI KOMENTARNYA)
         # =========================================================================
         html_code = """
         <!DOCTYPE html>
@@ -52,28 +52,28 @@ if file_gpx is not None:
                 var lonFinish = """ + str(lon_finish) + """;
                 var ruteTarget = """ + rute_json + """;
 
-                # B. Inisialisasi Peta Dasar berpusat di titik awal Rute
+                // B. Inisialisasi Peta Dasar berpusat di titik awal Rute
                 var map = L.map('map').setView([latStart, lonStart], 16);
                 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '© OpenStreetMap contributors'
                 }).addTo(map);
 
-                # C. Menggambar Garis Rute Panduan Strava (Oranye)
+                // C. Menggambar Garis Rute Panduan Strava (Oranye)
                 L.polyline(ruteTarget, {color: '#fc4c02', weight: 6, opacity: 0.8}).addTo(map);
                 
-                # Penanda Start & Finish Rute
+                // Penanda Start & Finish Rute
                 L.marker([latStart, lonStart]).addTo(map).bindPopup("Start Rute");
                 L.marker([latFinish, lonFinish]).addTo(map).bindPopup("Finish Rute");
 
-                # D. Membuat Penanda Titik Biru Live Pengguna
+                // D. Membuat Penanda Titik Biru Live Pengguna
                 var liveMarker = L.circleMarker([latStart, lonStart], {
                     color: '#007bff', fillColor: '#007bff', fillOpacity: 0.9, radius: 10
                 }).addTo(map).bindPopup("Posisi Kamu");
 
                 var statusDiv = document.getElementById('status');
 
-                # E. FUNGSI INTI: Memantau Pergerakan Sensor GPS HP Tanpa Halaman Memuat Ulang
+                // E. FUNGSI INTI: Memantau Pergerakan Sensor GPS HP Tanpa Halaman Memuat Ulang
                 if (navigator.geolocation) {
                     navigator.geolocation.watchPosition(
                         function(position) {
@@ -81,13 +81,13 @@ if file_gpx is not None:
                             var lon = position.coords.longitude;
                             var acc = position.coords.accuracy;
 
-                            # 1. Geser Titik Biru ke Posisi Baru di Peta
+                            // 1. Geser Titik Biru ke Posisi Baru di Peta
                             liveMarker.setLatLng([lat, lon]);
                             
-                            # 2. Otomatis Geser Fokus Kamera Peta Mengikuti Langkah Anda
+                            // 2. Otomatis Geser Fokus Kamera Peta Mengikuti Langkah Anda
                             map.setView([lat, lon]);
 
-                            # 3. Update Status Teks Akurasi GPS
+                            // 3. Update Status Teks Akurasi GPS
                             statusDiv.innerHTML = "✅ <b>Sinyal GPS Terkunci!</b> | Lat: " + lat.toFixed(5) + " | Lon: " + lon.toFixed(5) + " | Akurasi: " + acc.toFixed(1) + " meter";
                             statusDiv.style.background = "#d4edda";
                             statusDiv.style.color = "#155724";
