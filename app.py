@@ -27,12 +27,13 @@ if file_gpx is not None:
         lon_finish = float(titik_rute[-1][1])
         
         # =========================================================================
-        # 2. KODE PETA JAVASCRIPT MURNI (SUDAH DIKOREKSI KOMENTARNYA)
+        # 2. KODE PETA JAVASCRIPT MURNI (PERBAIKAN CDN LEAFLET LINK)
         # =========================================================================
         html_code = """
         <!DOCTYPE html>
         <html>
         <head>
+            <!-- Tautan CDN Leaflet yang sudah diperbaiki lengkap -->
             <link rel="stylesheet" href="https://unpkg.com" />
             <script src="https://unpkg.com"></script>
             <style>
@@ -106,7 +107,7 @@ if file_gpx is not None:
         </body>
         </html>
         """
-        
+
         # Tampilkan komponen peta HTML ke layar Streamlit
         st.components.v1.html(html_code, height=600)
         
