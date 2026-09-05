@@ -3,7 +3,7 @@ import gpxpy
 import json
 
 st.set_page_config(layout="wide")
-st.title("🏃‍♂️ Navigasi Rute Strava (Live Real-Time - HTML5)")
+st.title("🏃‍♂️ Navigasi Rute Strava (Live Real-Time - HTML5ke2)")
 st.write("Bawa HP Anda berjalan di luar ruangan. Titik biru akan bergeser mulus secara live tanpa ada refresh halaman!")
 
 # 1. Tombol untuk Upload File Rute .GPX Strava
