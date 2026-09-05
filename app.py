@@ -21,8 +21,10 @@ if file_gpx is not None:
     if titik_rute:
         # Mengubah data list Python menjadi format JSON agar bisa dibaca oleh JavaScript peta
         rute_json = json.dumps(titik_rute)
-        titik_start = titik_rute[0]
-        titik_finish = titik_rute[-1]
+        lat_start = titik_rute[0][0]
+        lon_start = titik_rute[0][1]
+        lat_finish = titik_rute[-1][0]
+        lon_finish = titik_rute[-1][1]
         
         # =========================================================================
         # 2. INJEKSI KODE PETA JAVASCRIPT MURNI (ANTI REFRESH / LIVE TRACKING)
@@ -35,7 +37,7 @@ if file_gpx is not None:
             <script src="https://unpkg.com"></script>
             <style>
                 #map {{ height: 550px; width: 100%; border-radius: 10px; }}
-                #status {{ padding: 10px; background: #d4edda; color: #155724; border-radius: 5px; margin-bottom: 10px; font-family: sans-serif; font-size: 14px; }}
+                #status {{ padding: 10px; background: #e2e3e5; color: #383d41; border-radius: 5px; margin-bottom: 10px; font-family: sans-serif; font-size: 14px; }}
             </style>
         </head>
         <body>
@@ -44,7 +46,7 @@ if file_gpx is not None:
 
             <script>
                 // A. Inisialisasi Peta Dasar berpusat di titik awal Rute
-                var map = L.map('map').setView([{titik_start[0]}, {titik_start[1]}], 16);
+                var map = L.map('map').setView([{lat_start}, {lon_start}], 16);
                 
                 L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
                     attribution: '© OpenStreetMap contributors'
@@ -55,11 +57,11 @@ if file_gpx is not None:
                 L.polyline(ruteTarget, {{color: '#fc4c02', weight: 6, opacity: 0.8}}).addTo(map);
                 
                 // Penanda Start & Finish Rute
-                L.marker([{titik_start[0]}, {titik_start[1]}]).addTo(map).bindPopup("Start Rute");
-                L.marker([{titik_finish[0]}, {titik_finish[1]}]).addTo(map).bindPopup("Finish Rute");
+                L.marker([{lat_start}, {lon_start}]).addTo(map).bindPopup("Start Rute");
+                L.marker([{lat_finish}, {lon_finish}]).addTo(map).bindPopup("Finish Rute");
 
-                // C. Membuat Penanda Titik Biru Live Pengguna
-                var liveMarker = L.circleMarker([0, 0], {{
+                // C. Membuat Penanda Titik Biru Live Pengguna (Awalnya ditaruh di titik start rute)
+                var liveMarker = L.circleMarker([{lat_start}, {lon_start}], {{
                     color: '#007bff', fillColor: '#007bff', fillOpacity: 0.9, radius: 10
                 }}).addTo(map).bindPopup("Posisi Kamu");
 
