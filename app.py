@@ -21,10 +21,13 @@ if file_gpx is not None:
     if titik_rute:
         # Mengubah data list Python menjadi format JSON agar bisa dibaca oleh JavaScript peta
         rute_json = json.dumps(titik_rute)
+        
+        # --- PERBAIKAN STRUKTUR INDEX DATA ---
         lat_start = titik_rute[0][0]
         lon_start = titik_rute[0][1]
         lat_finish = titik_rute[-1][0]
         lon_finish = titik_rute[-1][1]
+        # -------------------------------------
         
         # =========================================================================
         # 2. INJEKSI KODE PETA JAVASCRIPT MURNI (ANTI REFRESH / LIVE TRACKING)
@@ -60,7 +63,7 @@ if file_gpx is not None:
                 L.marker([{lat_start}, {lon_start}]).addTo(map).bindPopup("Start Rute");
                 L.marker([{lat_finish}, {lon_finish}]).addTo(map).bindPopup("Finish Rute");
 
-                // C. Membuat Penanda Titik Biru Live Pengguna (Awalnya ditaruh di titik start rute)
+                // C. Membuat Penanda Titik Biru Live Pengguna
                 var liveMarker = L.circleMarker([{lat_start}, {lon_start}], {{
                     color: '#007bff', fillColor: '#007bff', fillOpacity: 0.9, radius: 10
                 }}).addTo(map).bindPopup("Posisi Kamu");
