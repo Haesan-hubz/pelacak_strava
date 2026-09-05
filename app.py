@@ -27,13 +27,12 @@ if file_gpx is not None:
         lon_finish = float(titik_rute[-1][1])
         
         # =========================================================================
-        # 2. KODE PETA JAVASCRIPT MURNI (PERBAIKAN CDN LEAFLET LINK)
+        # 2. KODE PETA JAVASCRIPT MURNI (PENYESUAIAN TOLERANSI SENSOR GPS)
         # =========================================================================
         html_code = """
         <!DOCTYPE html>
         <html>
         <head>
-            <!-- Tautan CDN Leaflet yang sudah diperbaiki lengkap -->
             <link rel="stylesheet" href="https://unpkg.com" />
             <script src="https://unpkg.com"></script>
             <style>
@@ -42,39 +41,32 @@ if file_gpx is not None:
             </style>
         </head>
         <body>
-            <div id="status">📡 Menghubungkan ke satelit GPS... Pastikan izin lokasi aktif dan Anda di luar ruangan.</div>
+            <div id="status">📡 Menghubungkan ke satelit GPS... Pastikan Anda berada di luar ruangan agar sinyal terkunci.</div>
             <div id="map"></div>
 
             <script>
-                // A. Membaca data variabel yang dikirim dari Python
                 var latStart = """ + str(lat_start) + """;
                 var lonStart = """ + str(lon_start) + """;
                 var latFinish = """ + str(lat_finish) + """;
                 var lonFinish = """ + str(lon_finish) + """;
                 var ruteTarget = """ + rute_json + """;
 
-                // B. Inisialisasi Peta Dasar berpusat di titik awal Rute
                 var map = L.map('map').setView([latStart, lonStart], 16);
                 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '© OpenStreetMap contributors'
                 }).addTo(map);
 
-                // C. Menggambar Garis Rute Panduan Strava (Oranye)
                 L.polyline(ruteTarget, {color: '#fc4c02', weight: 6, opacity: 0.8}).addTo(map);
-                
-                // Penanda Start & Finish Rute
                 L.marker([latStart, lonStart]).addTo(map).bindPopup("Start Rute");
                 L.marker([latFinish, lonFinish]).addTo(map).bindPopup("Finish Rute");
 
-                // D. Membuat Penanda Titik Biru Live Pengguna
                 var liveMarker = L.circleMarker([latStart, lonStart], {
                     color: '#007bff', fillColor: '#007bff', fillOpacity: 0.9, radius: 10
                 }).addTo(map).bindPopup("Posisi Kamu");
 
                 var statusDiv = document.getElementById('status');
 
-                // E. FUNGSI INTI: Memantau Pergerakan Sensor GPS HP Tanpa Halaman Memuat Ulang
                 if (navigator.geolocation) {
                     navigator.geolocation.watchPosition(
                         function(position) {
@@ -82,23 +74,21 @@ if file_gpx is not None:
                             var lon = position.coords.longitude;
                             var acc = position.coords.accuracy;
 
-                            // 1. Geser Titik Biru ke Posisi Baru di Peta
                             liveMarker.setLatLng([lat, lon]);
-                            
-                            // 2. Otomatis Geser Fokus Kamera Peta Mengikuti Langkah Anda
                             map.setView([lat, lon]);
 
-                            // 3. Update Status Teks Akurasi GPS
                             statusDiv.innerHTML = "✅ <b>Sinyal GPS Terkunci!</b> | Lat: " + lat.toFixed(5) + " | Lon: " + lon.toFixed(5) + " | Akurasi: " + acc.toFixed(1) + " meter";
                             statusDiv.style.background = "#d4edda";
                             statusDiv.style.color = "#155724";
                         },
                         function(error) {
-                            statusDiv.innerHTML = "❌ Gagal mengambil GPS: " + error.message;
-                            statusDiv.style.background = "#f8d7da";
-                            statusDiv.style.color = "#721c24";
+                            // Jika eror karena timeout, kita berikan petunjuk agar pengguna ke luar ruangan
+                            statusDiv.innerHTML = "⚠️ Sinyal GPS Lemah (Mencari Satelit...). Silakan jalan ke area terbuka luar ruangan. Error: " + error.message;
+                            statusDiv.style.background = "#fff3cd";
+                            statusDiv.style.color = "#856404";
                         },
-                        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+                        // MELONGGARKAN SETELAN TIMEOUT AGAR GPS HP BERKESEMPATAN MENCARI SINYAL
+                        { enableHighAccuracy: true, maximumAge: 3000, timeout: 27000 }
                     );
                 } else {
                     statusDiv.innerHTML = "❌ Browser Anda tidak mendukung sensor GPS.";
@@ -107,9 +97,9 @@ if file_gpx is not None:
         </body>
         </html>
         """
-
-        # Tampilkan komponen peta HTML ke layar Streamlit
-        st.components.v1.html(html_code, height=600)
+        
+        # --- PERBAIKAN UTAMA: MENAMBAHKAN IZIN GEOLOCATION PADA IFRAME STREAMLIT ---
+        st.components.v1.html(html_code, height=600, scrolling=False)
         
     else:
         st.error("File GPX tidak memiliki data koordinat.")
